@@ -1,0 +1,230 @@
+#include "ADC_config.h"
+#include "ADC_priv.h"
+#include "ADC_int.h"
+
+#include "utils.h"
+#include "std_types.h"
+
+//#include <avr/interrupt.h>
+
+void __vector_16 (void) __attribute__ ((signal,used, externally_visible));
+
+void(*fptr) (void) ='\0';
+
+void ADC_voidInit(void)
+{
+#if (ADC_VREF == ADC_AREF)
+	CLRBIT(ADMUX,REFS1);
+	CLRBIT(ADMUX,REFS0);
+#elif (ADC_VREF == ADC_AVCC)
+	CLRBIT(ADMUX,REFS1);
+	SETBIT(ADMUX,REFS0);
+#elif (ADC_VREF == ADC_INT2_5V )
+	SETBIT(ADMUX,REFS1);
+	SETBIT(ADMUX,REFS0);
+#endif
+
+// default channel (you can change channel during runtime)
+ADC_voidChangeChannel(ADC_CH0);
+
+/*#if (ADC_CH == ADC_CH0)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	CLRBIT(ADMUX,MUX2);
+	CLRBIT(ADMUX,MUX1);
+	CLRBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH1)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	CLRBIT(ADMUX,MUX2);
+	CLRBIT(ADMUX,MUX1);
+	SETBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH2)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	CLRBIT(ADMUX,MUX2);
+	SETBIT(ADMUX,MUX1);
+	CLRBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH3)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	CLRBIT(ADMUX,MUX2);
+	SETBIT(ADMUX,MUX1);
+	SETBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH4)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	SETBIT(ADMUX,MUX2);
+	CLRBIT(ADMUX,MUX1);
+	CLRBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH5)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	SETBIT(ADMUX,MUX2);
+	CLRBIT(ADMUX,MUX1);
+	SETBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH6)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	SETBIT(ADMUX,MUX2);
+	SETBIT(ADMUX,MUX1);
+	CLRBIT(ADMUX,MUX0);
+#elif (ADC_CH == ADC_CH7)
+	CLRBIT(ADMUX,MUX4);
+	CLRBIT(ADMUX,MUX3);
+	SETBIT(ADMUX,MUX2);
+	SETBIT(ADMUX,MUX1);
+	SETBIT(ADMUX,MUX0);
+#endif
+*/
+CLRBIT(ADMUX,ADLAR); // Left Adjustment
+
+SETBIT(ADCSRA,ADEN);
+
+CLRBIT(ADCSRA,ADATE);
+
+SETBIT(ADCSRA,ADIE);
+
+#if (ADC_CLKDIV == ADC_DIV2)
+	CLRBIT(ADCSRA,ADPS0);
+	CLRBIT(ADCSRA,ADPS1);
+	CLRBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV4)
+	CLRBIT(ADCSRA,ADPS0);
+	SETBIT(ADCSRA,ADPS1);
+	CLRBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV8 )
+	SETBIT(ADCSRA,ADPS0);
+	SETBIT(ADCSRA,ADPS1);
+	CLRBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV16)
+	CLRBIT(ADCSRA,ADPS0);
+	CLRBIT(ADCSRA,ADPS1);
+	SETBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV32)
+	SETBIT(ADCSRA,ADPS0);
+	CLRBIT(ADCSRA,ADPS1);
+	SETBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV64)
+	CLRBIT(ADCSRA,ADPS0);
+	SETBIT(ADCSRA,ADPS1);
+	SETBIT(ADCSRA,ADPS2);
+#elif (ADC_CLKDIV == ADC_DIV128)
+	SETBIT(ADCSRA,ADPS0);
+	SETBIT(ADCSRA,ADPS1);
+	SETBIT(ADCSRA,ADPS2);
+#endif
+CLRBIT (SFIOR,ADTS2);
+CLRBIT (SFIOR,ADTS1);
+CLRBIT (SFIOR,ADTS0);
+
+SETBIT(ADCSRA,ADIF);
+}
+
+void ADC_voidChangeChannel(u8 local_channelNo)
+{
+	if (local_channelNo == ADC_CH0)
+	{
+		CLRBIT(ADMUX, MUX4);
+		CLRBIT(ADMUX, MUX3);
+		CLRBIT(ADMUX, MUX2);
+		CLRBIT(ADMUX, MUX1);
+		CLRBIT(ADMUX, MUX0);
+	}
+	else if (local_channelNo == ADC_CH1)
+	{
+		CLRBIT(ADMUX, MUX4);
+		CLRBIT(ADMUX, MUX3);
+		CLRBIT(ADMUX, MUX2);
+		CLRBIT(ADMUX, MUX1);
+		SETBIT(ADMUX, MUX0);
+	}
+	else if (local_channelNo == ADC_CH2)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		CLRBIT(ADMUX,MUX2);
+		SETBIT(ADMUX,MUX1);
+		CLRBIT(ADMUX,MUX0);
+	}
+	else if (local_channelNo == ADC_CH3)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		CLRBIT(ADMUX,MUX2);
+		SETBIT(ADMUX,MUX1);
+		SETBIT(ADMUX,MUX0);
+	}
+	else if (local_channelNo == ADC_CH4)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		SETBIT(ADMUX,MUX2);
+		CLRBIT(ADMUX,MUX1);
+		CLRBIT(ADMUX,MUX0);
+	}
+	else if (local_channelNo == ADC_CH5)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		SETBIT(ADMUX,MUX2);
+		CLRBIT(ADMUX,MUX1);
+		SETBIT(ADMUX,MUX0);
+	}
+	else if (local_channelNo == ADC_CH6)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		SETBIT(ADMUX,MUX2);
+		SETBIT(ADMUX,MUX1);
+		CLRBIT(ADMUX,MUX0);
+	}
+	else if (local_channelNo == ADC_CH7)
+	{
+		CLRBIT(ADMUX,MUX4);
+		CLRBIT(ADMUX,MUX3);
+		SETBIT(ADMUX,MUX2);
+		SETBIT(ADMUX,MUX1);
+		SETBIT(ADMUX,MUX0);
+	}
+
+}
+
+u16 ADC_u16GetData (void)
+{
+
+	//return ADCW;
+	//need shift if using left adjust we will write return ADCW >> ;
+/*#define DATA CONCREG(ADCH,ADCL)
+#define CONCREG(reg1,reg2) CONCREG_HELPER(reg1,reg2)
+#define CONCREG_HELPER(reg1,reg2) reg1##reg2
+*/
+
+u16 data;
+data = 0b0000000000000000;
+data |=ADCL;
+data |=ADCH<<8;
+return data;
+}
+
+void ADC_voidStartConv(void)
+{
+	SETBIT(ADCSRA,ADSC);
+}
+
+void ADC_voidSetISRPtr(void(*local_fptr)(void))
+{
+	fptr = local_fptr;
+}
+/*
+ISR(ADC_vect)
+{
+	(*fptr)();
+}
+*/
+
+
+void __vector_16 (void)
+{
+ (*fptr)();
+}
